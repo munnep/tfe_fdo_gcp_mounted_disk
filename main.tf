@@ -16,6 +16,16 @@ resource "google_compute_router" "tfe_router" {
 }
 
 
+data "google_compute_image" "ubuntu" {
+  family  = "ubuntu-2404-lts-amd64"
+  project = "ubuntu-os-cloud"
+}
+
+data "google_compute_image" "redhat" {
+  family  = "rhel-9"
+  project = "rhel-cloud"
+}
+
 
 
 resource "google_compute_instance" "tfe" {
@@ -27,7 +37,7 @@ resource "google_compute_instance" "tfe" {
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-2204-jammy-v20240207"
+      image = var.tfe_os == "ubuntu" ? data.google_compute_image.ubuntu.self_link : data.google_compute_image.redhat.self_link
     }
   }
 
@@ -47,8 +57,8 @@ resource "google_compute_instance" "tfe" {
   }
 
   metadata = {
-    "ssh-keys" = "ubuntu:${var.public_key}"
-    "user-data" = templatefile("${path.module}/scripts/cloudinit_tfe_server.yaml", {
+    "ssh-keys" = "cloud-user:${var.public_key}"
+    "user-data" = templatefile("${path.module}/scripts/cloudinit_tfe_server_${var.tfe_os}.yaml", {
       tag_prefix        = var.tag_prefix
       dns_hostname      = var.dns_hostname
       tfe_password      = var.tfe_password
@@ -61,6 +71,7 @@ resource "google_compute_instance" "tfe" {
     })
   }
 
+  metadata_startup_script = var.tfe_os == "redhat" ? file("${path.module}/scripts/startup_wrapper_redhat.sh") : null
 
   depends_on = [google_compute_subnetwork.tfe_subnet]
 

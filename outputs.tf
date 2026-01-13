@@ -1,5 +1,5 @@
 output "ssh_tfe_server" {
-  value = "ssh ubuntu@${var.dns_hostname}.${var.dns_zonename}"
+  value = "ssh ${var.tfe_os}@${var.dns_hostname}.${var.dns_zonename}"
 }
 
 output "tfe_instance_public_ip" {

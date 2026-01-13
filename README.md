@@ -2,6 +2,11 @@
 
 This is a repository to have a TFE FDO mounted disk environment on GCP. 
 
+The choice of operating system will also determine if you are using `docker` or `podman`
+
+- `tfe_os = "ubuntu"`: installs and runs Terraform Enterprise using **Docker** 
+- `tfe_os = "redhat"`: installs and runs Terraform Enterprise using **Podman** 
+
 # Diagram
 
 ![](diagram/diagram_tfe_fdo_gcp_mounted_disk.png)  
@@ -13,11 +18,71 @@ Make sure you have a TFE license available for use
 
 ## GCP
 
+
 Have your GCP credentials configured
 
-## AWS
+```
+gcloud config set account 845080953236-compute@developer.gserviceaccount.com
+gcloud auth activate-service-account --key-file=key.json
+gcloud config set project <your project>
+gcloud auth application-default login
+```
 
-This repository uses AWS resources for the DNS resources and creating the records
+#### API enabled for
+- Compute Engine API
+- Cloud Resource Manager API
+- Google DNS API
+- IAM Service Account Credentials API
+- Identity and Access Management (IAM) API
+- Service Usage API
+- Google Cloud APIs
+- Service Management API
+- Google Cloud Storage JSON API
+- Cloud Storage API
+- Cloud SQL admin API
+- Google Cloud Memorystore for Redis API
+- Service Networking API
+ 
+```
+gcloud services enable serviceusage.googleapis.com      # this might give an error to be enabled from the console first with a link. 
+
+gcloud services enable compute.googleapis.com
+gcloud services enable cloudresourcemanager.googleapis.com
+gcloud services enable dns.googleapis.com
+gcloud services enable iamcredentials.googleapis.com
+gcloud services enable iam.googleapis.com
+gcloud services enable cloudapis.googleapis.com
+gcloud services enable servicemanagement.googleapis.com
+gcloud services enable storage-api.googleapis.com
+gcloud services enable storage.googleapis.com
+gcloud services enable servicenetworking.googleapis.com
+gcloud services enable sqladmin.googleapis.com
+gcloud services enable redis.googleapis.com
+gcloud services enable container.googleapis.com
+```
+
+
+#### Following roles assigned to your account
+
+Option 1:
+- have the owner assigned to the account
+
+Option 2:
+- Compute Network Admin
+- Compute Storage Admin
+- Editor
+- Project IAM Admin
+- kubernetes engine admin
+- Compute Instance Admin (v1)
+- Compute Security Admin
+- Compute Viewer
+- DNS Administrator
+- Quota Viewer
+- Security Admin
+- Service Account Admin
+- Service Account Key Admin
+- Service Account User
+- Storage Admin
 
 ## Install terraform  
 See the following documentation [How to install Terraform](https://learn.hashicorp.com/tutorials/terraform/install-cli)
@@ -25,7 +90,7 @@ See the following documentation [How to install Terraform](https://learn.hashico
 ## TLS certificate
 You need to have valid TLS certificates that can be used with the DNS name you will be using to contact the TFE instance.  
   
-The repo assumes you have no certificates and want to create them using Let's Encrypt and that your DNS domain is managed under AWS. 
+The repo assumes you have no certificates and want to create them using Let's Encrypt and that your DNS domain is managed under GCP. 
 
 # How to
 
@@ -43,18 +108,17 @@ cd tfe_fdo_gcp_mounted_disk
 # General
 tag_prefix        = "tfe22"                       # TAG prefix for names to easily find your AWS resources
 dns_hostname      = "tfe22"                       # DNS hostname for the TFE
-dns_zonename      = "aws.munnep.com"              # DNS zone name to be used
-tfe_release       = "v202312-1"                   # Version number for the release to install. This must have a value
+dns_zonename      = "hashicorpdemo.com"           # DNS zone name to be used
+tfe_release       = "1.1.3"                   # Version number for the release to install. This must have a value
 tfe_password      = "Password#1"                  # TFE password for the dashboard and encryption of the data
 public_key        = "ssh-rsa AAAAB3NzaN"          # The public key for you to connect to the server over SSH
 certificate_email = "patrick.munne@hashicorp.com" # Your email address used by TLS certificate 
 tfe_license       = "02MV4UU43BK5HGYYTOJZ"        # license file being used
-# AWS
-aws_region        = "eu-north-1"              # AWS region creating the DNS records
 # gcp
 gcp_region        = "eu-north-1"                  # GCP region creating the resources
 vnet_cidr         = "10.214.0.0/16"               # Network to be used
 gcp_project       = "hc-ff9323d13b0e4e0daee434a8171"
+tfe_os            = "ubuntu"  # ubuntu  or redhat
 ```
 - Terraform initialize
 ```
@@ -74,11 +138,15 @@ Apply complete! Resources: 16 added, 0 changed, 0 destroyed.
 
 Outputs:
 
-ssh_tfe_server = "ssh ubuntu@tfe23.aws.munnep.com"
-tfe_appplication = "https://tfe23.aws.munnep.com"
-tfe_instance_public_ip = "34.32.208.215"
+ssh_tfe_server = "ssh redhat@tfe33.hc-0ecd51335ae74f1089a9a431017.gcp.sbx.hashicorpdemo.com"
+tfe_appplication = "https://tfe33.hc-0ecd51335ae74f1089a9a431017.gcp.sbx.hashicorpdemo.com"
+tfe_instance_public_ip = "34.6.236.163"
 ```
 - You can now login to the application with the username `admin` and password specified in your variables.
+
+## Startup logs
+
+With Ubuntu operating system the logs during installation are found in `/var/log/cloud-init-output.txt`. With RedHat and GCP you will need to use `journalctl -u google-startup-scripts.service --no-page -f`
 
 # TODO
 

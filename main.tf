@@ -26,6 +26,9 @@ data "google_compute_image" "redhat" {
   project = "rhel-cloud"
 }
 
+locals {
+  os_user = var.tfe_os == "redhat" ? "cloud-user" : "ubuntu"
+}
 
 
 resource "google_compute_instance" "tfe" {
@@ -57,7 +60,7 @@ resource "google_compute_instance" "tfe" {
   }
 
   metadata = {
-    "ssh-keys" = "cloud-user:${var.public_key}"
+    "ssh-keys" = "${local.os_user}:${var.public_key}"
     "user-data" = templatefile("${path.module}/scripts/cloudinit_tfe_server_${var.tfe_os}.yaml", {
       tag_prefix        = var.tag_prefix
       dns_hostname      = var.dns_hostname
